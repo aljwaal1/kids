@@ -1,16 +1,21 @@
 name: kids_learning_v1
-description: تطبيق طفلي الأول التعليمي للأطفال - عربي وإنجليزي وألعاب.
+description: Educational Android app for kids.
 publish_to: 'none'
 version: 1.0.0+1
 
 environment:
-  sdk: '>=3.4.0 <4.0.0'
+  sdk: ^3.8.0
 
 dependencies:
   flutter:
     sdk: flutter
   flutter_tts: ^4.2.3
-  shared_preferences: ^2.5.3
+  shared_preferences: ^2.3.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
 
 flutter:
   uses-material-design: true
