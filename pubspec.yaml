@@ -1,7 +1,7 @@
-name: kids_learning_v3
-description: Kids learning app with offline asset sounds.
+name: kids_learning_v4
+description: Kids learning app with offline asset sounds and educational games.
 publish_to: 'none'
-version: 1.0.3+3
+version: 1.0.4+4
 
 environment:
   sdk: ^3.8.0

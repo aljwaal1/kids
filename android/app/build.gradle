@@ -5,15 +5,15 @@ plugins {
 }
 
 android {
-    namespace "com.example.kidslearningv3"
+    namespace "com.example.kidslearningv4"
     compileSdk 35
 
     defaultConfig {
-        applicationId "com.example.kidslearningv3"
+        applicationId "com.example.kidslearningv4"
         minSdk 23
         targetSdk 35
-        versionCode 3
-        versionName "1.0.3"
+        versionCode 4
+        versionName "1.0.4"
     }
 
     buildTypes {
