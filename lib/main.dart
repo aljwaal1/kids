@@ -19,6 +19,61 @@ Future<void> play(String fileName) async {
   HapticFeedback.selectionClick();
 }
 
+String recordingKeyForItem(LearnItem item) => '${item.sound}|${item.title}|${item.sub}';
+
+Future<void> playLearnItem(LearnItem item) async {
+  try {
+    await _channel.invokeMethod('playRecordingOrAsset', {
+      'key': recordingKeyForItem(item),
+      'file': 'assets/audio/${item.sound}',
+    });
+  } catch (_) {
+    await play(item.sound);
+    return;
+  }
+  HapticFeedback.selectionClick();
+}
+
+Future<bool> startRecordingForItem(LearnItem item) async {
+  try {
+    return await _channel.invokeMethod<bool>('startRecording', {'key': recordingKeyForItem(item)}) ?? false;
+  } catch (_) {
+    return false;
+  }
+}
+
+Future<bool> stopCurrentRecording() async {
+  try {
+    return await _channel.invokeMethod<bool>('stopRecording') ?? false;
+  } catch (_) {
+    return false;
+  }
+}
+
+Future<bool> playRecordingForItem(LearnItem item) async {
+  try {
+    return await _channel.invokeMethod<bool>('playRecording', {'key': recordingKeyForItem(item)}) ?? false;
+  } catch (_) {
+    return false;
+  }
+}
+
+Future<bool> deleteRecordingForItem(LearnItem item) async {
+  try {
+    return await _channel.invokeMethod<bool>('deleteRecording', {'key': recordingKeyForItem(item)}) ?? false;
+  } catch (_) {
+    return false;
+  }
+}
+
+Future<bool> hasRecordingForItem(LearnItem item) async {
+  try {
+    return await _channel.invokeMethod<bool>('hasRecording', {'key': recordingKeyForItem(item)}) ?? false;
+  } catch (_) {
+    return false;
+  }
+}
+
 Future<int> loadSavedInt(String key) async {
   try {
     final value = await _channel.invokeMethod<int>('loadInt', {'key': key});
@@ -218,6 +273,7 @@ class HomePage extends StatelessWidget {
               HomeButton('🐶', 'الحيوانات عربي + English', () => open(context, const LearnGrid(title: 'الحيوانات', items: animals, rtl: true))),
               HomeButton('🎮', 'الألعاب التعليمية', () => open(context, const GamesMenuPage())),
               HomeButton('🏆', 'إنجازاتي', () => open(context, const AchievementsPage())),
+              HomeButton('🎤', 'قسم الوالدين - تسجيل الأصوات', () => open(context, const ParentGatePage())),
             ],
           ),
         ),
@@ -354,7 +410,7 @@ class LearnCard extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
       child: InkWell(
         borderRadius: BorderRadius.circular(26),
-        onTap: () => play(item.sound),
+        onTap: () => playLearnItem(item),
         child: Padding(
           padding: const EdgeInsets.all(12),
           child: FittedBox(
@@ -759,6 +815,268 @@ class _AchievementsPageState extends State<AchievementsPage> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class ParentGatePage extends StatefulWidget {
+  const ParentGatePage({super.key});
+
+  @override
+  State<ParentGatePage> createState() => _ParentGatePageState();
+}
+
+class _ParentGatePageState extends State<ParentGatePage> {
+  final TextEditingController _controller = TextEditingController();
+  String _message = '';
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _enter() {
+    play('tap.wav');
+    if (_controller.text.trim() == '1234') {
+      Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const ParentRecordingsHomePage()));
+      return;
+    }
+    setState(() => _message = 'الرمز غير صحيح');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(title: const Text('قسم الوالدين')),
+        body: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            const SizedBox(height: 24),
+            const Text('🎤', textAlign: TextAlign.center, style: TextStyle(fontSize: 86)),
+            const Text('تسجيل أصوات الطفل', textAlign: TextAlign.center, style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 10),
+            const Text(
+              'يمكنك تسجيل صوت الأب أو الأم للحروف والأرقام والحيوانات. الرمز الافتراضي 1234.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xff555555)),
+            ),
+            const SizedBox(height: 22),
+            TextField(
+              controller: _controller,
+              keyboardType: TextInputType.number,
+              obscureText: true,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+              decoration: InputDecoration(
+                hintText: 'رمز الدخول',
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(22)),
+              ),
+              onSubmitted: (_) => _enter(),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _enter,
+              icon: const Icon(Icons.lock_open),
+              label: const Text('دخول'),
+              style: ElevatedButton.styleFrom(padding: const EdgeInsets.all(16), textStyle: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+            ),
+            if (_message.isNotEmpty) ...[
+              const SizedBox(height: 14),
+              Text(_message, textAlign: TextAlign.center, style: const TextStyle(fontSize: 20, color: Colors.red, fontWeight: FontWeight.bold)),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class ParentRecordingsHomePage extends StatelessWidget {
+  const ParentRecordingsHomePage({super.key});
+
+  void open(BuildContext context, String title, List<LearnItem> items, bool rtl) {
+    play('tap.wav');
+    Navigator.push(context, MaterialPageRoute(builder: (_) => RecordingListPage(title: title, items: items, rtl: rtl)));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(title: const Text('تسجيل الأصوات')),
+        body: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            const Text('اختر المجموعة', textAlign: TextAlign.center, style: TextStyle(fontSize: 32, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 10),
+            const Text(
+              'بعد التسجيل، سيستخدم التطبيق صوتك عند الضغط على البطاقة. إذا لم يوجد تسجيل، يبقى الصوت الحالي يعمل.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 19, fontWeight: FontWeight.bold, color: Color(0xff555555)),
+            ),
+            const SizedBox(height: 16),
+            HomeButton('🔤', 'تسجيل الحروف العربية', () => open(context, 'تسجيل الحروف العربية', arLetters, true)),
+            HomeButton('🔢', 'تسجيل الأرقام العربية', () => open(context, 'تسجيل الأرقام العربية', arNums, true)),
+            HomeButton('🔠', 'Record English Letters', () => open(context, 'Record English Letters', enLetters, false)),
+            HomeButton('🔢', 'Record English Numbers', () => open(context, 'Record English Numbers', enNums, false)),
+            HomeButton('🐶', 'تسجيل الحيوانات', () => open(context, 'تسجيل الحيوانات', animals, true)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class RecordingListPage extends StatefulWidget {
+  final String title;
+  final List<LearnItem> items;
+  final bool rtl;
+
+  const RecordingListPage({super.key, required this.title, required this.items, required this.rtl});
+
+  @override
+  State<RecordingListPage> createState() => _RecordingListPageState();
+}
+
+class _RecordingListPageState extends State<RecordingListPage> {
+  final Map<String, bool> _recorded = {};
+  String _message = '';
+  String _recordingKey = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStatuses();
+  }
+
+  Future<void> _loadStatuses() async {
+    final statuses = <String, bool>{};
+    for (final item in widget.items) {
+      statuses[recordingKeyForItem(item)] = await hasRecordingForItem(item);
+    }
+    if (!mounted) return;
+    setState(() => _recorded
+      ..clear()
+      ..addAll(statuses));
+  }
+
+  Future<void> _toggleRecord(LearnItem item) async {
+    final key = recordingKeyForItem(item);
+    if (_recordingKey == key) {
+      final ok = await stopCurrentRecording();
+      if (!mounted) return;
+      setState(() {
+        _recordingKey = '';
+        _recorded[key] = ok || (_recorded[key] ?? false);
+        _message = ok ? 'تم حفظ التسجيل' : 'لم يتم حفظ التسجيل، حاول مرة أخرى';
+      });
+      return;
+    }
+
+    if (_recordingKey.isNotEmpty) {
+      await stopCurrentRecording();
+    }
+
+    final ok = await startRecordingForItem(item);
+    if (!mounted) return;
+    setState(() {
+      _recordingKey = ok ? key : '';
+      _message = ok ? 'يتم التسجيل الآن... اضغط إيقاف عند الانتهاء' : 'اسمح للميكروفون ثم اضغط تسجيل مرة أخرى';
+    });
+  }
+
+  Future<void> _play(LearnItem item) async {
+    final ok = await playRecordingForItem(item);
+    if (!mounted) return;
+    setState(() => _message = ok ? 'تشغيل التسجيل' : 'لا يوجد تسجيل لهذا العنصر');
+  }
+
+  Future<void> _delete(LearnItem item) async {
+    final key = recordingKeyForItem(item);
+    final ok = await deleteRecordingForItem(item);
+    if (!mounted) return;
+    setState(() {
+      _recorded[key] = false;
+      if (_recordingKey == key) _recordingKey = '';
+      _message = ok ? 'تم حذف التسجيل' : 'لا يوجد تسجيل لحذفه';
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Directionality(
+      textDirection: widget.rtl ? TextDirection.rtl : TextDirection.ltr,
+      child: Scaffold(
+        appBar: AppBar(title: Text(widget.title)),
+        body: ListView.builder(
+          padding: const EdgeInsets.all(12),
+          itemCount: widget.items.length + 1,
+          itemBuilder: (context, index) {
+            if (index == 0) {
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Text(
+                  _message.isEmpty ? 'اضغط تسجيل، قل الكلمة بوضوح، ثم اضغط إيقاف' : _message,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xff6C63FF)),
+                ),
+              );
+            }
+
+            final item = widget.items[index - 1];
+            final key = recordingKeyForItem(item);
+            final isRecording = _recordingKey == key;
+            final hasRecording = _recorded[key] ?? false;
+
+            return Card(
+              color: Colors.white,
+              elevation: 2,
+              margin: const EdgeInsets.only(bottom: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(22)),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Row(
+                  children: [
+                    Text(item.emoji, style: const TextStyle(fontSize: 42)),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(item.title, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900)),
+                          if (item.sub.isNotEmpty) Text(item.sub, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xff666666))),
+                          Text(hasRecording ? 'يوجد تسجيل' : 'بدون تسجيل خاص', style: TextStyle(fontSize: 15, color: hasRecording ? Colors.green : Colors.grey, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: isRecording ? 'إيقاف' : 'تسجيل',
+                      onPressed: () => _toggleRecord(item),
+                      icon: Icon(isRecording ? Icons.stop_circle : Icons.mic, color: isRecording ? Colors.red : const Color(0xff6C63FF), size: 32),
+                    ),
+                    IconButton(
+                      tooltip: 'تشغيل',
+                      onPressed: hasRecording ? () => _play(item) : null,
+                      icon: const Icon(Icons.play_circle, size: 32),
+                    ),
+                    IconButton(
+                      tooltip: 'حذف',
+                      onPressed: hasRecording ? () => _delete(item) : null,
+                      icon: const Icon(Icons.delete, size: 30),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
