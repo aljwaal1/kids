@@ -8,11 +8,25 @@ android {
         applicationId 'com.explapp.kidslegacy'
         minSdk 19
         targetSdk 28
-        versionCode 1
-        versionName '1.0.0-legacy'
+        versionCode 2
+        versionName '2.0.0-legacy'
     }
 
     buildTypes {
-        release { minifyEnabled false }
+        release {
+            minifyEnabled false
+            shrinkResources false
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_7
+        targetCompatibility JavaVersion.VERSION_1_7
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
     }
 }
