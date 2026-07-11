@@ -8,8 +8,8 @@ android {
         applicationId 'com.explapp.kidslegacy'
         minSdk 19
         targetSdk 28
-        versionCode 3
-        versionName '3.0.0-illustrated'
+        versionCode 4
+        versionName '3.0.1-stable-hotfix'
     }
 
     buildTypes {
